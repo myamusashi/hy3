@@ -1544,7 +1544,7 @@ void Hy3Layout::applyNodeDataToWindow(Hy3Node* node, bool no_animation) {
 	auto window = node->data.as_window();
 	auto root_node = this->getWorkspaceRootGroup(window->m_pWorkspace);
 
-	PHLMONITOR monitor = nullptr;
+	PHLMONITOR monitor;
 
 	if (node->workspace->m_bIsSpecialWorkspace) {
 		for (auto& m: g_pCompositor->m_vMonitors) {
