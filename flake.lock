@@ -20,6 +20,7 @@
         ]
       },
       "locked": {
+
         "lastModified": 1753216019,
         "narHash": "sha256-zik7WISrR1ks2l6T1MZqZHb/OqroHdJnSnAehkE0kCk=",
         "owner": "hyprwm",
@@ -87,6 +88,7 @@
         ]
       },
       "locked": {
+
         "lastModified": 1753964049,
         "narHash": "sha256-lIqabfBY7z/OANxHoPeIrDJrFyYy9jAM4GQLzZ2feCM=",
         "owner": "hyprwm",
@@ -145,6 +147,7 @@
         "xdph": "xdph"
       },
       "locked": {
+
         "lastModified": 1754144468,
         "narHash": "sha256-SOP9IpcrS3MsfYXUXcGpAao77sRZFovk+3kVjg3zmD8=",
         "owner": "hyprwm",
@@ -154,6 +157,7 @@
       },
       "original": {
         "owner": "hyprwm",
+
         "repo": "hyprland",
         "rev": "824438949e60ad6d6fefdfa37f0af8fbe0849934",
         "type": "github"
@@ -294,7 +298,6 @@
         ]
       },
       "locked": {
-
         "lastModified": 1753622892,
         "narHash": "sha256-0K+A+gmOI8IklSg5It1nyRNv0kCNL51duwnhUO/B8JA=",
         "owner": "hyprwm",
@@ -351,7 +354,6 @@
         ]
       },
       "locked": {
-
         "lastModified": 1753800567,
         "narHash": "sha256-W0xgXsaqGa/5/7IBzKNhf0+23MqGPymYYfqT7ECqeTE=",
         "owner": "hyprwm",
@@ -392,6 +394,7 @@
     },
     "nixpkgs": {
       "locked": {
+
 
         "lastModified": 1753939845,
         "narHash": "sha256-K2ViRJfdVGE8tpJejs8Qpvvejks1+A4GQej/lBk5y7I=",
@@ -479,6 +482,7 @@
         ]
       },
       "locked": {
+
         "lastModified": 1753633878,
         "narHash": "sha256-js2sLRtsOUA/aT10OCDaTjO80yplqwOIaLUqEe0nMx0=",
         "owner": "hyprwm",
