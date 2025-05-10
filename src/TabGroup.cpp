@@ -99,6 +99,7 @@ Hy3TabBarEntry::Hy3TabBarEntry(Hy3TabBar& tab_bar, Hy3Node& node): tab_bar(tab_b
 	this->active->setUpdateCallback(update_callback);
 	this->focused->setUpdateCallback(update_callback);
 	this->urgent->setUpdateCallback(update_callback);
+	this->focused->setUpdateCallback(update_callback);
 	this->offset->setUpdateCallback(update_callback);
 	this->width->setUpdateCallback(update_callback);
 	this->vertical_pos->setUpdateCallback(update_callback);
@@ -173,18 +174,22 @@ void Hy3TabBarEntry::render(float scale, CBox& box, float opacity_mul) {
 	static const auto col_border_focused = ConfigValue<Hyprlang::INT>("plugin:hy3:tabs:col.focused.border");
 	static const auto col_urgent = ConfigValue<Hyprlang::INT>("plugin:hy3:tabs:col.urgent");
 	static const auto col_border_urgent = ConfigValue<Hyprlang::INT>("plugin:hy3:tabs:col.urgent.border");
+	static const auto col_locked = ConfigValue<Hyprlang::INT>("plugin:hy3:tabs:col.locked");
+	static const auto col_border_locked = ConfigValue<Hyprlang::INT>("plugin:hy3:tabs:col.locked.border");
 	static const auto col_inactive = ConfigValue<Hyprlang::INT>("plugin:hy3:tabs:col.inactive");
 	static const auto col_border_inactive = ConfigValue<Hyprlang::INT>("plugin:hy3:tabs:col.inactive.border");
 	// clang-format on
 
 	auto radius = std::min((double) *s_radius * scale, std::min(box.width * 0.5, box.height * 0.5));
 
-	auto color = this->mergeColors(*col_active, *col_focused, *col_urgent, *col_inactive);
+	auto color =
+	    this->mergeColors(*col_active, *col_focused, *col_urgent, *col_locked, *col_inactive);
 
 	auto border_color = this->mergeColors(
 	    *col_border_active,
 	    *col_border_focused,
 	    *col_border_urgent,
+	    *col_border_locked,
 	    *col_border_inactive
 	);
 
@@ -214,8 +219,9 @@ void Hy3TabBarEntry::renderText(float scale, CBox& box, float opacity) {
 	static const auto text_height = ConfigValue<Hyprlang::INT>("plugin:hy3:tabs:text_height");
 	static const auto text_padding = ConfigValue<Hyprlang::INT>("plugin:hy3:tabs:text_padding");
 	static const auto col_text_active = ConfigValue<Hyprlang::INT>("plugin:hy3:tabs:col.active.text");
-	static const auto col_text_focused = ConfigValue<Hyprlang::INT>("plugin:hy3:tabs:col.active.text");
+	static const auto col_text_focused = ConfigValue<Hyprlang::INT>("plugin:hy3:tabs:col.focused.text");
 	static const auto col_text_urgent = ConfigValue<Hyprlang::INT>("plugin:hy3:tabs:col.urgent.text");
+	static const auto col_text_locked = ConfigValue<Hyprlang::INT>("plugin:hy3:tabs:col.locked.text");
 	static const auto col_text_inactive = ConfigValue<Hyprlang::INT>("plugin:hy3:tabs:col.inactive.text");
 	// clang-format on
 
@@ -304,7 +310,7 @@ void Hy3TabBarEntry::renderText(float scale, CBox& box, float opacity) {
 		if (!this->texture) this->texture = makeShared<CTexture>();
 		this->texture->allocate();
 
-		glBindTexture(GL_TEXTURE_2D, this->texture->m_iTexID);
+		glBindTexture(GL_TEXTURE_2D, this->texture->m_texID);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
@@ -343,7 +349,13 @@ void Hy3TabBarEntry::renderText(float scale, CBox& box, float opacity) {
 
 	texture_box.round();
 
-	auto c = mergeColors(*col_text_active, *col_text_focused, *col_text_urgent, *col_text_inactive);
+	auto c = mergeColors(
+	    *col_text_active,
+	    *col_text_focused,
+	    *col_text_urgent,
+	    *col_text_locked,
+	    *col_text_inactive
+	);
 
 	glBlendFunc(GL_CONSTANT_COLOR, GL_ONE_MINUS_SRC_ALPHA);
 	glBlendColor(c.r, c.g, c.b, c.a);
@@ -358,18 +370,20 @@ CHyprColor Hy3TabBarEntry::mergeColors(
     const CHyprColor& active,
     const CHyprColor& focused,
     const CHyprColor& urgent,
+    const CHyprColor& locked,
     const CHyprColor& inactive
 ) {
-	auto focused_av = this->focused->value();
 	auto active_v = this->active->value();
-	auto focused_v = focused_av - active_v;
-	auto urgent_v = this->urgent->value();
-	auto inactive_v = 1.0f - (focused_av + urgent_v);
+	auto urgent_v = std::max(0.0f, this->urgent->value() - active_v);
+	auto focused_v = std::max(0.0f, this->focused->value() - active_v - urgent_v);
+	auto locked_v = std::max(0.0f, this->tab_bar.locked->value() - active_v - urgent_v - focused_v);
+	auto inactive_v = 1.0f - (active_v + urgent_v + focused_v + locked_v);
 
 	return merge_colors(
 	    std::make_pair(active_v, active),
-	    std::make_pair(focused_v, focused),
 	    std::make_pair(urgent_v, urgent),
+	    std::make_pair(focused_v, focused),
+	    std::make_pair(locked_v, locked),
 	    std::make_pair(inactive_v, inactive)
 	);
 }
@@ -382,7 +396,15 @@ Hy3TabBar::Hy3TabBar() {
 	    AVARDAMAGE_NONE
 	);
 
+	g_pAnimationManager->createAnimation(
+	    0.0F,
+	    this->locked,
+	    g_pConfigManager->getAnimationPropertyConfig("fadeSwitch"),
+	    AVARDAMAGE_NONE
+	);
+
 	this->fade_opacity->setUpdateCallback([this](auto) { this->dirty = true; });
+	this->locked->setUpdateCallback([this](auto) { this->dirty = true; });
 }
 
 void Hy3TabBar::beginDestroy() {
@@ -572,6 +594,9 @@ void Hy3TabGroup::updateWithGroup(Hy3Node& node, bool warp) {
 	this->bar.updateNodeList(node.data.as_group().children);
 	this->bar.updateAnimations(warp);
 
+	auto locked = node.data.as_group().locked;
+	if (this->bar.locked->goal() != locked) *this->bar.locked = locked;
+
 	if (node.data.as_group().focused_child != nullptr) {
 		this->updateStencilWindows(*node.data.as_group().focused_child);
 	}
@@ -592,7 +617,7 @@ void Hy3TabGroup::tick() {
 	this->bar.tick();
 
 	if (valid(this->workspace)) {
-		auto has_fullscreen = this->workspace->m_bHasFullscreenWindow;
+		auto has_fullscreen = this->workspace->m_hasFullscreenWindow;
 
 		if (!has_fullscreen && *no_gaps_when_only) {
 			auto root_node = g_Hy3Layout->getWorkspaceRootGroup(this->workspace.get());
@@ -606,7 +631,7 @@ void Hy3TabGroup::tick() {
 			if (this->bar.fade_opacity->goal() != 1.0) *this->bar.fade_opacity = 1.0;
 		}
 
-		auto workspaceOffset = this->workspace->m_vRenderOffset->value();
+		auto workspaceOffset = this->workspace->m_renderOffset->value();
 		if (this->last_workspace_offset != workspaceOffset) {
 			// First we damage the area where the bar was during the previous
 			// tick, cleaning up after ourselves
@@ -624,7 +649,7 @@ void Hy3TabGroup::tick() {
 			this->last_workspace_offset = workspaceOffset;
 		}
 
-		if (this->workspace->m_fAlpha->isBeingAnimated()) {
+		if (this->workspace->m_alpha->isBeingAnimated()) {
 			auto pos = this->pos->value();
 			auto size = this->size->value();
 			damageBox(&pos, &size);
@@ -657,15 +682,15 @@ void Hy3TabGroup::tick() {
 }
 
 std::pair<CBox, CBox> Hy3TabGroup::getRenderBB() const {
-	auto* monitor = g_pHyprOpenGL->m_RenderData.pMonitor.get();
-	auto scale = monitor->scale;
+	auto* monitor = g_pHyprOpenGL->m_renderData.pMonitor.get();
+	auto scale = monitor->m_scale;
 
-	auto monitor_size = monitor->vecSize;
-	auto pos = this->pos->value() - monitor->vecPosition;
+	auto monitor_size = monitor->m_size;
+	auto pos = this->pos->value() - monitor->m_position;
 	auto size = this->size->value();
 
 	if (valid(this->workspace)) {
-		pos = pos + this->workspace->m_vRenderOffset->value();
+		pos = pos + this->workspace->m_renderOffset->value();
 	}
 
 	auto box = CBox(pos, size);
@@ -681,8 +706,8 @@ void Hy3TabGroup::renderTabBar() {
 
 	auto [box, scaledBox] = this->getRenderBB();
 
-	auto* monitor = g_pHyprOpenGL->m_RenderData.pMonitor.get();
-	auto scale = monitor->scale;
+	auto* monitor = g_pHyprOpenGL->m_renderData.pMonitor.get();
+	auto scale = monitor->m_scale;
 
 	if (!this->bar.damaged) {
 		pixman_region32 damage;
@@ -690,7 +715,7 @@ void Hy3TabGroup::renderTabBar() {
 
 		pixman_region32_intersect_rect(
 		    &damage,
-		    g_pHyprOpenGL->m_RenderData.damage.pixman(),
+		    g_pHyprOpenGL->m_renderData.damage.pixman(),
 		    scaledBox.x,
 		    scaledBox.y,
 		    scaledBox.width,
@@ -732,10 +757,10 @@ void Hy3TabGroup::renderTabBar() {
 			auto window = windowref.lock();
 
 			auto wpos =
-			    window->m_vRealPosition->value() - monitor->vecPosition
-			    + (window->m_pWorkspace ? window->m_pWorkspace->m_vRenderOffset->value() : Vector2D());
+			    window->m_realPosition->value() - monitor->m_position
+			    + (window->m_workspace ? window->m_workspace->m_renderOffset->value() : Vector2D());
 
-			auto wsize = window->m_vRealSize->value();
+			auto wsize = window->m_realSize->value();
 
 			CBox window_box = {wpos.x, wpos.y, wsize.x, wsize.y};
 			// scaleBox(&window_box, scale);
@@ -753,7 +778,7 @@ void Hy3TabGroup::renderTabBar() {
 	}
 
 	auto fade_opacity = this->bar.fade_opacity->value()
-	                  * (valid(this->workspace) ? this->workspace->m_fAlpha->value() : 1.0);
+	                  * (valid(this->workspace) ? this->workspace->m_alpha->value() : 1.0);
 
 	auto render_entry = [&](Hy3TabBarEntry& entry) {
 		Vector2D entry_pos = {
@@ -807,6 +832,8 @@ bool Hy3TabPassElement::needsPrecomputeBlur() {
 	static const auto col_border_focused = ConfigValue<Hyprlang::INT>("plugin:hy3:tabs:col.focused.border");
 	static const auto col_urgent = ConfigValue<Hyprlang::INT>("plugin:hy3:tabs:col.urgent");
 	static const auto col_border_urgent = ConfigValue<Hyprlang::INT>("plugin:hy3:tabs:col.urgent.border");
+	static const auto col_locked = ConfigValue<Hyprlang::INT>("plugin:hy3:tabs:col.locked");
+	static const auto col_border_locked = ConfigValue<Hyprlang::INT>("plugin:hy3:tabs:col.urgent.locked");
 	static const auto col_inactive = ConfigValue<Hyprlang::INT>("plugin:hy3:tabs:col.inactive");
 	static const auto col_border_inactive = ConfigValue<Hyprlang::INT>("plugin:hy3:tabs:col.inactive.border");
 	// clang-format on
@@ -817,7 +844,8 @@ bool Hy3TabPassElement::needsPrecomputeBlur() {
 	auto needsblur = [](const auto& col) { return CHyprColor(*col).a < 1.0; };
 	return needsblur(col_active) || needsblur(col_border_active) || needsblur(col_focused)
 	    || needsblur(col_border_focused) || needsblur(col_urgent) || needsblur(col_border_urgent)
-	    || needsblur(col_inactive) || needsblur(col_border_inactive);
+	    || needsblur(col_locked) || needsblur(col_border_locked) || needsblur(col_inactive)
+	    || needsblur(col_border_inactive);
 }
 
 std::optional<CBox> Hy3TabPassElement::boundingBox() { return this->group->getRenderBB().first; }

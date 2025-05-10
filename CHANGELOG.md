@@ -1,7 +1,8 @@
 # Changelog
 
-# Upcoming
+# hl0.48.0 and before
 - Added `toggle` to `hy3:makegroup`
+- Added `hy3:locktab`
 
 # hl0.47.0-1 and before
 - Added focused tab color, to mark selected tabs inside an unfocused container.

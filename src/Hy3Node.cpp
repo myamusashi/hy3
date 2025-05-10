@@ -26,6 +26,7 @@ Hy3GroupData::Hy3GroupData(Hy3GroupLayout layout): layout(layout) {
 
 Hy3GroupData::Hy3GroupData(Hy3GroupData&& from) {
 	this->layout = from.layout;
+	this->locked = from.locked;
 	this->previous_nontab_layout = from.previous_nontab_layout;
 	this->children = std::move(from.children);
 	this->group_focused = from.group_focused;
@@ -176,7 +177,7 @@ void Hy3Node::focus(bool warp) {
 		auto window = this->data.as_window();
 		window->setHidden(false);
 		g_pCompositor->focusWindow(window);
-		if (warp) Hy3Layout::warpCursorToBox(window->m_vPosition, window->m_vSize);
+		if (warp) Hy3Layout::warpCursorToBox(window->m_position, window->m_size);
 		break;
 	}
 	case Hy3NodeType::Group: {
@@ -301,6 +302,12 @@ Hy3Node& Hy3Node::getExpandActor() {
 	return *node;
 }
 
+Hy3Node& Hy3Node::getPlacementActor() {
+	Hy3Node* node = &this->getExpandActor();
+	while (node->parent && node->parent->data.as_group().locked) node = node->parent;
+	return *node;
+}
+
 void Hy3Node::recalcSizePosRecursive(bool no_animation) {
 	// clang-format off
 	static const auto p_gaps_in = ConfigValue<Hyprlang::CUSTOMTYPE, CCssGapData>("general:gaps_in");
@@ -314,30 +321,30 @@ void Hy3Node::recalcSizePosRecursive(bool no_animation) {
 	auto gaps_out = workspace_rule.gapsOut.value_or(*p_gaps_out);
 
 	auto gap_topleft_offset = Vector2D(
-	    (int) -(gaps_in.left - gaps_out.left),
-	    (int) -(gaps_in.top - gaps_out.top)
+	    (int) -(gaps_in.m_left - gaps_out.m_left),
+	    (int) -(gaps_in.m_top - gaps_out.m_top)
 	);
 
 	auto gap_bottomright_offset = Vector2D(
-			(int) -(gaps_in.right - gaps_out.right),
-			(int) -(gaps_in.bottom - gaps_out.bottom)
+			(int) -(gaps_in.m_right - gaps_out.m_right),
+			(int) -(gaps_in.m_bottom - gaps_out.m_bottom)
 	);
 	// clang-format on
 
 	if (this->data.is_window() && this->data.as_window()->isFullscreen()) {
 		auto window = this->data.as_window();
-		auto& monitor = this->workspace->m_pMonitor;
+		auto& monitor = this->workspace->m_monitor;
 
 		if (window->isEffectiveInternalFSMode(FSMODE_FULLSCREEN)) {
-			*window->m_vRealPosition = monitor->vecPosition;
-			*window->m_vRealSize = monitor->vecSize;
+			*window->m_realPosition = monitor->m_position;
+			*window->m_realSize = monitor->m_size;
 			return;
 		}
 
 		Hy3Node fake_node = {
 		    .data = window,
-		    .position = monitor->vecPosition + monitor->vecReservedTopLeft,
-		    .size = monitor->vecSize - monitor->vecReservedTopLeft - monitor->vecReservedBottomRight,
+		    .position = monitor->m_position + monitor->m_reservedTopLeft,
+		    .size = monitor->m_size - monitor->m_reservedTopLeft - monitor->m_reservedBottomRight,
 		    .gap_topleft_offset = gap_topleft_offset,
 		    .gap_bottomright_offset = gap_bottomright_offset,
 		    .workspace = this->workspace,
@@ -525,7 +532,7 @@ void findTopWindowInNode(Hy3Node& node, FindTopWindowInNodeResult& result) {
 	switch (node.data.type()) {
 	case Hy3NodeType::Window: {
 		auto window = node.data.as_window();
-		auto& windows = g_pCompositor->m_vWindows;
+		auto& windows = g_pCompositor->m_windows;
 
 		for (; result.index < windows.size(); result.index++) {
 			if (windows[result.index] == window) {
@@ -560,7 +567,7 @@ void Hy3Node::updateTabBar(bool no_animation) {
 			FindTopWindowInNodeResult result;
 			findTopWindowInNode(*this, result);
 			group.tab_bar->target_window = result.window;
-			if (result.window != nullptr) group.tab_bar->workspace = result.window->m_pWorkspace;
+			if (result.window != nullptr) group.tab_bar->workspace = result.window->m_workspace;
 		} else if (group.tab_bar != nullptr) {
 			group.tab_bar->bar.beginDestroy();
 			group.tab_bar = nullptr;
@@ -593,7 +600,7 @@ void Hy3Node::updateDecos() {
 
 std::string Hy3Node::getTitle() {
 	switch (this->data.type()) {
-	case Hy3NodeType::Window: return this->data.as_window()->m_szTitle;
+	case Hy3NodeType::Window: return this->data.as_window()->m_title;
 	case Hy3NodeType::Group:
 		std::string title;
 		auto& group = this->data.as_group();
@@ -618,7 +625,7 @@ std::string Hy3Node::getTitle() {
 
 bool Hy3Node::isUrgent() {
 	switch (this->data.type()) {
-	case Hy3NodeType::Window: return this->data.as_window()->m_bIsUrgent;
+	case Hy3NodeType::Window: return this->data.as_window()->m_isUrgent;
 	case Hy3NodeType::Group:
 		for (auto* child: this->data.as_group().children) {
 			if (child->isUrgent()) return true;
@@ -645,8 +652,8 @@ CBox Hy3Node::getStandardWindowArea(SBoxExtents extents) {
 	auto gaps_in = workspace_rule.gapsIn.value_or(*p_gaps_in);
 
 	SBoxExtents inner_gap_extents;
-	inner_gap_extents.topLeft = {(int) -gaps_in.left, (int) -gaps_in.top};
-	inner_gap_extents.bottomRight = {(int) -gaps_in.right, (int) -gaps_in.bottom};
+	inner_gap_extents.topLeft = {(int) -gaps_in.m_left, (int) -gaps_in.m_top};
+	inner_gap_extents.bottomRight = {(int) -gaps_in.m_right, (int) -gaps_in.m_bottom};
 
 	SBoxExtents combined_outer_extents;
 	combined_outer_extents.topLeft = -this->gap_topleft_offset;

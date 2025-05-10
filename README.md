@@ -18,7 +18,7 @@ i3 / sway like layout for [hyprland](https://github.com/hyprwm/hyprland).
 Additional features may be suggested in the repo issues or the [matrix room](https://matrix.to/#/#hy3:outfoxxed.me).
 
 ### Demo
-<video width="640" height="360" controls="controls" src="https://user-images.githubusercontent.com/83010835/255322916-85ae8196-8b12-4e15-b060-9872db10839f.mp4"></video>
+<video width="640" height="360" controls="controls" src="https://github.com/user-attachments/assets/ed2fe78d-8c31-47d8-a91d-e89aed42189c"></video>
 
 -----
 
@@ -277,8 +277,8 @@ plugin {
       text_padding = <int> # default: 3
 
       # active tab bar segment colors
-      col.active = <color> # default: rgba(50a0e0ff)
-      col.active.border = <color> # default: rgba(70b0c0ff)
+      col.active = <color> # default: rgba(33ccff40)
+      col.active.border = <color> # default: rgba(33ccffee)
       col.active.text = <color> # default: rgba(ffffffff)
 
       # focused tab bar segment colors (focused node in unfocused container)
@@ -287,14 +287,19 @@ plugin {
       col.focused.text = <color> # default: rgba(ffffffff)
 
       # inactive tab bar segment colors
-      col.inactive = <color> # default: rgba(30303050)
-      col.inactive.border = <color> # default: rgba(50505090)
+      col.inactive = <color> # default: rgba(30303020)
+      col.inactive.border = <color> # default: rgba(606060aa)
       col.inactive.text = <color> # default: rgba(ffffffff)
 
       # urgent tab bar segment colors
-      col.urgent = <color> # default: rgba(ff4f4fff)
-      col.urgent.border = <color> # default: rgba(ff8080ff)
+      col.urgent = <color> # default: rgba(ff223340)
+      col.urgent.border = <color> # default: rgba(ff2233ee)
       col.urgent.text = <color> # default: rgba(ffffffff)
+
+      # urgent tab bar segment colors
+      col.locked = <color> # default: rgba(90903340)
+      col.locked.border = <color> # default: rgba(909033ee)
+      col.locked.text = <color> # default: rgba(ffffffff)
 
       # if tab backgrounds should be blurred
       # Blur is only visible when the above colors are not opaque.
@@ -367,12 +372,13 @@ plugin {
    - `tabnode` - raise focus to the nearest node under the tab
  - `hy3:togglefocuslayer, [nowarp]` - toggle focus between tiled and floating layers
    - `nowarp` - do not warp the mouse to the newly focused window
- - `hy3:focustab [l | r | left | right | index, <index>], [prioritize_hovered | require_hovered], [wrap]`
+ - `hy3:focustab, [l | r | left | right | index, <index>], [prioritize_hovered | require_hovered], [wrap]`
    - `l | r | left | right` - direction to change focus towards
    - `index, <index>` - select the `index`th tab
    - `prioritize_hovered` - prioritize the tab group under the mouse when multiple are stacked. use the lowest group if none is under the mouse.
    - `require_hovered` - affect the tab group under the mouse. do nothing if none are hovered.
    - `wrap` - wrap to the opposite size of the tab bar if moving off the end
+ - `hy3:locktab, [lock | unlock]` - lock the current tab, makingg it behave like a node
  - `hy3:debugnodes` - print the node tree into the hyprland log
  - :warning: **ALPHA QUALITY** `hy3:setswallow, <true | false | toggle>` - set the containing node's window swallow state
  - :warning: **ALPHA QUALITY** `hy3:expand, <expand | shrink | base>` - expand the current node to cover other nodes

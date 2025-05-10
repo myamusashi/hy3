@@ -115,8 +115,8 @@ void dispatch_movefocus(std::string value) {
 
 	int argi = 0;
 	auto shift = parseShiftArg(args[argi++]);
-	if (!shift) return SDispatchResult {};
-	if (workspace->m_bHasFullscreenWindow) {
+	if (!shift) return;
+	if (workspace->m_hasFullscreenWindow) {
 		g_Hy3Layout->focusMonitor(shift.value());
 		return SDispatchResult {};
 	}
@@ -270,6 +270,17 @@ void dispatch_expand(std::string value) {
 	return SDispatchResult {};
 }
 
+void dispatch_locktab(std::string arg) {
+	auto workspace = workspace_for_action();
+	if (!valid(workspace)) return;
+
+	auto mode = TabLockMode::Toggle;
+	if (arg == "lock") mode = TabLockMode::Lock;
+	else if (arg == "unlock") mode = TabLockMode::Unlock;
+
+	g_Hy3Layout->setTabLock(workspace.get(), mode);
+}
+
 void dispatch_debug(std::string arg) {
 	auto workspace = workspace_for_action();
 
@@ -296,5 +307,6 @@ void registerDispatchers() {
 	HyprlandAPI::addDispatcher(PHANDLE, "hy3:setswallow", dispatch_setswallow);
 	HyprlandAPI::addDispatcher(PHANDLE, "hy3:killactive", dispatch_killactive);
 	HyprlandAPI::addDispatcher(PHANDLE, "hy3:expand", dispatch_expand);
+	HyprlandAPI::addDispatcher(PHANDLE, "hy3:locktab", dispatch_locktab);
 	HyprlandAPI::addDispatcher(PHANDLE, "hy3:debugnodes", dispatch_debug);
 }
