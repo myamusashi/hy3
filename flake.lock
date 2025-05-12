@@ -145,6 +145,7 @@
         "xdph": "xdph"
       },
       "locked": {
+
         "lastModified": 1754144468,
         "narHash": "sha256-SOP9IpcrS3MsfYXUXcGpAao77sRZFovk+3kVjg3zmD8=",
         "owner": "hyprwm",
@@ -261,10 +262,10 @@
         "nixpkgs": [
           "hyprland",
           "nixpkgs"
-        ],
         ]
       },
       "locked": {
+
         "lastModified": 1753622892,
         "narHash": "sha256-0K+A+gmOI8IklSg5It1nyRNv0kCNL51duwnhUO/B8JA=",
         "owner": "hyprwm",
@@ -290,6 +291,7 @@
         ]
       },
       "locked": {
+
         "lastModified": 1753800567,
         "narHash": "sha256-W0xgXsaqGa/5/7IBzKNhf0+23MqGPymYYfqT7ECqeTE=",
         "owner": "hyprwm",
@@ -330,6 +332,7 @@
     },
     "nixpkgs": {
       "locked": {
+
         "lastModified": 1753939845,
         "narHash": "sha256-K2ViRJfdVGE8tpJejs8Qpvvejks1+A4GQej/lBk5y7I=",
         "owner": "NixOS",
@@ -354,6 +357,7 @@
         ]
       },
       "locked": {
+
         "lastModified": 1750779888,
         "narHash": "sha256-wibppH3g/E2lxU43ZQHC5yA/7kIKLGxVEnsnVK1BtRg=",
         "owner": "cachix",
