@@ -1,31 +1,24 @@
 {
   inputs = {
-    hyprland.url = "github:hyprwm/hyprland/824438949e60ad6d6fefdfa37f0af8fbe0849934";
+    hyprland.url = "github:hyprwm/hyprland/81bf4eccba449bfe2b6adfb51260108aec710d4f";
   };
 
-  outputs =
-    { self, hyprland, ... }:
-    let
-      inherit (hyprland.inputs) nixpkgs;
+  outputs = { self, hyprland, ... }: let
+    inherit (hyprland.inputs) nixpkgs;
 
-      hyprlandSystems =
-        fn:
-        nixpkgs.lib.genAttrs (builtins.attrNames hyprland.packages) (
-          system: fn system nixpkgs.legacyPackages.${system}
-        );
+    hyprlandSystems = fn: nixpkgs.lib.genAttrs
+      (builtins.attrNames hyprland.packages)
+      (system: fn system nixpkgs.legacyPackages.${system});
 
-      hyprlandVersion = nixpkgs.lib.removeSuffix "\n" (builtins.readFile "${hyprland}/VERSION");
-    in
-    {
-      packages = hyprlandSystems (
-        system: pkgs: rec {
-          hy3 = pkgs.callPackage ./default.nix {
-            hyprland = hyprland.packages.${system}.hyprland;
-            hlversion = hyprlandVersion;
-          };
-          default = hy3;
-        }
-      );
+    hyprlandVersion = nixpkgs.lib.removeSuffix "\n" (builtins.readFile "${hyprland}/VERSION");
+  in {
+    packages = hyprlandSystems (system: pkgs: rec {
+      hy3 = pkgs.callPackage ./default.nix {
+        hyprland = hyprland.packages.${system}.hyprland;
+        hlversion = hyprlandVersion;
+      };
+      default = hy3;
+    });
 
     devShells = hyprlandSystems (system: pkgs: {
       default = import ./shell.nix {

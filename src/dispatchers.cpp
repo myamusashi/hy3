@@ -8,9 +8,9 @@
 #include "dispatchers.hpp"
 #include "globals.hpp"
 
-static SDispatchResult dispatch_makegroup(std::string value) {
+void dispatch_makegroup(std::string value) {
 	auto workspace = workspace_for_action();
-	if (!valid(workspace)) return SDispatchResult {};
+	if (!valid(workspace)) return;
 
 	auto args = CVarList(value);
 
@@ -25,20 +25,19 @@ static SDispatchResult dispatch_makegroup(std::string value) {
 	}
 
 	if (args[0] == "h") {
-		g_Hy3Layout->makeGroupOnWorkspace(workspace.get(), Hy3GroupLayout::SplitH, ephemeral);
+		g_Hy3Layout->makeGroupOnWorkspace(workspace.get(), Hy3GroupLayout::SplitH, ephemeral, toggle);
 	} else if (args[0] == "v") {
-		g_Hy3Layout->makeGroupOnWorkspace(workspace.get(), Hy3GroupLayout::SplitV, ephemeral);
+		g_Hy3Layout->makeGroupOnWorkspace(workspace.get(), Hy3GroupLayout::SplitV, ephemeral, toggle);
 	} else if (args[0] == "tab") {
-		g_Hy3Layout->makeGroupOnWorkspace(workspace.get(), Hy3GroupLayout::Tabbed, ephemeral);
+		g_Hy3Layout->makeGroupOnWorkspace(workspace.get(), Hy3GroupLayout::Tabbed, ephemeral, toggle);
 	} else if (args[0] == "opposite") {
 		g_Hy3Layout->makeOppositeGroupOnWorkspace(workspace.get(), ephemeral);
 	}
-	return SDispatchResult {};
 }
 
 void dispatch_changegroup(std::string value) {
 	auto workspace = workspace_for_action();
-	if (!valid(workspace)) return SDispatchResult {};
+	if (!valid(workspace)) return;
 
 	auto args = CVarList(value);
 
@@ -55,19 +54,17 @@ void dispatch_changegroup(std::string value) {
 	} else if (args[0] == "opposite") {
 		g_Hy3Layout->changeGroupToOppositeOnWorkspace(workspace.get());
 	}
-	return SDispatchResult {};
 }
 
 void dispatch_setephemeral(std::string value) {
 	auto workspace = workspace_for_action();
-	if (!valid(workspace)) return SDispatchResult {};
+	if (!valid(workspace)) return;
 
 	auto args = CVarList(value);
 
 	bool ephemeral = args[0] == "true";
 
 	g_Hy3Layout->changeGroupEphemeralityOnWorkspace(workspace.get(), ephemeral);
-	return SDispatchResult {};
 }
 
 std::optional<ShiftDirection> parseShiftArg(std::string arg) {
@@ -80,7 +77,7 @@ std::optional<ShiftDirection> parseShiftArg(std::string arg) {
 
 void dispatch_movewindow(std::string value) {
 	auto workspace = workspace_for_action();
-	if (!valid(workspace)) return SDispatchResult {};
+	if (!valid(workspace)) return;
 
 	auto args = CVarList(value);
 
@@ -101,12 +98,11 @@ void dispatch_movewindow(std::string value) {
 
 		g_Hy3Layout->shiftWindow(workspace.get(), shift.value(), once, visible);
 	}
-	return SDispatchResult {};
 }
 
 void dispatch_movefocus(std::string value) {
 	auto workspace = workspace_for_action(true);
-	if (!valid(workspace)) return SDispatchResult {};
+	if (!valid(workspace)) return;
 
 	auto args = CVarList(value);
 
@@ -118,7 +114,7 @@ void dispatch_movefocus(std::string value) {
 	if (!shift) return;
 	if (workspace->m_hasFullscreenWindow) {
 		g_Hy3Layout->focusMonitor(shift.value());
-		return SDispatchResult {};
+		return;
 	}
 
 	auto visible = args[argi] == "visible";
@@ -128,32 +124,27 @@ void dispatch_movefocus(std::string value) {
 	else if (args[argi] == "warp") warp_cursor = true;
 
 	g_Hy3Layout->shiftFocus(workspace.get(), shift.value(), visible, warp_cursor);
-	return SDispatchResult {};
 }
 
 void dispatch_togglefocuslayer(std::string value) {
 	auto workspace = workspace_for_action();
-	if (!valid(workspace)) return SDispatchResult {};
+	if (!valid(workspace)) return;
 
 	g_Hy3Layout->toggleFocusLayer(workspace.get(), value != "nowarp");
-	return SDispatchResult {};
 }
 
-static SDispatchResult dispatch_warpcursor(std::string value) {
-	g_Hy3Layout->warpCursor();
-	return SDispatchResult {};
-}
+void dispatch_warpcursor(std::string value) { g_Hy3Layout->warpCursor(); }
 
 void dispatch_move_to_workspace(std::string value) {
 	auto origin_workspace = workspace_for_action(true);
-	if (!valid(origin_workspace)) return SDispatchResult {};
+	if (!valid(origin_workspace)) return;
 
 	auto args = CVarList(value);
 
 	static const auto no_cursor_warps = ConfigValue<Hyprlang::INT>("cursor:no_warps");
 
 	auto workspace = args[0];
-	if (workspace == "") return SDispatchResult {};
+	if (workspace == "") return;
 
 	auto follow = args[1] == "follow";
 
@@ -162,12 +153,11 @@ void dispatch_move_to_workspace(std::string value) {
 	    && ((!*no_cursor_warps && args[2] != "nowarp") || (*no_cursor_warps && args[2] == "warp"));
 
 	g_Hy3Layout->moveNodeToWorkspace(origin_workspace.get(), workspace, follow, warp_cursor);
-	return SDispatchResult {};
 }
 
 void dispatch_changefocus(std::string arg) {
 	auto workspace = workspace_for_action();
-	if (!valid(workspace)) return SDispatchResult {};
+	if (!valid(workspace)) return;
 
 	if (arg == "top") g_Hy3Layout->changeFocus(workspace.get(), FocusShift::Top);
 	else if (arg == "bottom") g_Hy3Layout->changeFocus(workspace.get(), FocusShift::Bottom);
@@ -175,12 +165,11 @@ void dispatch_changefocus(std::string arg) {
 	else if (arg == "lower") g_Hy3Layout->changeFocus(workspace.get(), FocusShift::Lower);
 	else if (arg == "tab") g_Hy3Layout->changeFocus(workspace.get(), FocusShift::Tab);
 	else if (arg == "tabnode") g_Hy3Layout->changeFocus(workspace.get(), FocusShift::TabNode);
-	return SDispatchResult {};
 }
 
 void dispatch_focustab(std::string value) {
 	auto workspace = workspace_for_action();
-	if (!valid(workspace)) return SDispatchResult {};
+	if (!valid(workspace)) return;
 
 	auto i = 0;
 	auto args = CVarList(value);
@@ -195,13 +184,10 @@ void dispatch_focustab(std::string value) {
 	else if (args[i] == "index") {
 		i++;
 		focus = TabFocus::Index;
-		if (!isNumber(args[i])) return SDispatchResult {};
+		if (!isNumber(args[i])) return;
 		index = std::stoi(args[i]);
 		Debug::log(LOG, "Focus index '%s' -> %d, errno: %d", args[i].c_str(), index, errno);
-	} else if (args[i] == "mouse") {
-		g_Hy3Layout->focusTab(workspace.get(), TabFocus::MouseLocation, mouse, false, 0);
-		return SDispatchResult {};
-	} else return SDispatchResult {};
+	} else return;
 
 	i++;
 
@@ -216,12 +202,11 @@ void dispatch_focustab(std::string value) {
 	if (args[i++] == "wrap") wrap_scroll = true;
 
 	g_Hy3Layout->focusTab(workspace.get(), focus, mouse, wrap_scroll, index);
-	return SDispatchResult {};
 }
 
 void dispatch_setswallow(std::string arg) {
 	auto workspace = workspace_for_action();
-	if (!valid(workspace)) return SDispatchResult {};
+	if (!valid(workspace)) return;
 
 	SetSwallowOption option;
 	if (arg == "true") {
@@ -230,23 +215,21 @@ void dispatch_setswallow(std::string arg) {
 		option = SetSwallowOption::NoSwallow;
 	} else if (arg == "toggle") {
 		option = SetSwallowOption::Toggle;
-	} else return SDispatchResult {};
+	} else return;
 
-	return SDispatchResult {};
 	g_Hy3Layout->setNodeSwallow(workspace.get(), option);
 }
 
 void dispatch_killactive(std::string value) {
 	auto workspace = workspace_for_action(true);
-	if (!valid(workspace)) return SDispatchResult {};
+	if (!valid(workspace)) return;
 
 	g_Hy3Layout->killFocusedNode(workspace.get());
-	return SDispatchResult {};
 }
 
 void dispatch_expand(std::string value) {
 	auto workspace = workspace_for_action();
-	if (!valid(workspace)) return SDispatchResult {};
+	if (!valid(workspace)) return;
 
 	auto args = CVarList(value);
 
@@ -258,16 +241,15 @@ void dispatch_expand(std::string value) {
 	else if (args[0] == "base") expand = ExpandOption::Base;
 	else if (args[0] == "maximize") expand = ExpandOption::Maximize;
 	else if (args[0] == "fullscreen") expand = ExpandOption::Fullscreen;
-	else return SDispatchResult {};
+	else return;
 
 	if (args[1] == "intermediate_maximize") fs_expand = ExpandFullscreenOption::MaximizeIntermediate;
 	else if (args[1] == "fullscreen_maximize")
 		fs_expand = ExpandFullscreenOption::MaximizeAsFullscreen;
 	else if (args[1] == "maximize_only") fs_expand = ExpandFullscreenOption::MaximizeOnly;
-	else if (args[1] != "") return SDispatchResult {};
+	else if (args[1] != "") return;
 
 	g_Hy3Layout->expand(workspace.get(), expand, fs_expand);
-	return SDispatchResult {};
 }
 
 void dispatch_locktab(std::string arg) {
@@ -290,7 +272,6 @@ void dispatch_debug(std::string arg) {
 	} else {
 		hy3_log(LOG, "DEBUG NODES\n{}", root->debugNode().c_str());
 	}
-	return SDispatchResult {};
 }
 
 void registerDispatchers() {
